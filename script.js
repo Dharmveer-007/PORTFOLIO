@@ -1,151 +1,217 @@
 /**
  * Portfolio Website - JavaScript
- * Handles all interactive functionality
+ * Handles interactive features: Theme Toggle, Mobile Navigation, Modals, Contact Form & Toasts
  */
 
-// Wait for DOM to be fully loaded
-document.addEventListener('DOMContentLoaded', function() {
-    
-    // Navbar Scroll Effect
-    const navbar = document.querySelector('.navbar');
-    
-    window.addEventListener('scroll', function() {
-        if (window.scrollY > 50) {
-            navbar.classList.add('scrolled');
-        } else {
-            navbar.classList.remove('scrolled');
-        }
-    });
+// Global Modal & UI Functions (accessible directly from HTML onclick)
+let toastTimeout = null;
 
-    // Dark Mode Toggle
-    const darkModeToggle = document.getElementById('darkModeToggle');
-    
-    // Check for saved dark mode preference
-    const savedDarkMode = localStorage.getItem('darkMode');
-    if (savedDarkMode === 'enabled') {
-        document.body.classList.add('dark-mode');
-        darkModeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+/**
+ * Show the Resume Modal
+ */
+function showResume() {
+    const modal = document.getElementById('resumeModal');
+    if (modal) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden'; // Lock background scroll
     }
-    
+}
+
+/**
+ * Close the Resume Modal
+ */
+function closeResume() {
+    const modal = document.getElementById('resumeModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = ''; // Restore background scroll
+    }
+}
+
+/**
+ * Show the Certificate Modal
+ * @param {string} imageSrc - Path to certificate image
+ * @param {string} certTitle - Title of the certificate
+ */
+function showCertificate(imageSrc, certTitle = 'Certificate Preview') {
+    const modal = document.getElementById('certificateModal');
+    const img = document.getElementById('certificateImage');
+    const titleEl = document.getElementById('certModalTitle');
+    const fullViewBtn = document.getElementById('certFullView');
+
+    if (modal && img) {
+        img.src = imageSrc;
+        img.alt = certTitle;
+        if (titleEl) titleEl.textContent = certTitle;
+        if (fullViewBtn) fullViewBtn.href = imageSrc;
+
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden'; // Lock background scroll
+    }
+}
+
+/**
+ * Close the Certificate Modal
+ */
+function closeCertificate() {
+    const modal = document.getElementById('certificateModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = ''; // Restore background scroll
+    }
+}
+
+/**
+ * Display a Toast Notification
+ * @param {string} title - Header text
+ * @param {string} message - Body text
+ * @param {boolean} isError - Whether toast represents an error
+ */
+function showToast(title, message, isError = false) {
+    const toast = document.getElementById('toast');
+    const toastTitle = document.getElementById('toastTitle');
+    const toastMessage = document.getElementById('toastMessage');
+    const toastIcon = document.getElementById('toastIcon');
+
+    if (!toast) return;
+
+    if (toastTitle) toastTitle.textContent = title;
+    if (toastMessage) toastMessage.textContent = message;
+
+    if (isError) {
+        toast.classList.add('error');
+        if (toastIcon) toastIcon.className = 'fas fa-exclamation-circle toast-icon';
+    } else {
+        toast.classList.remove('error');
+        if (toastIcon) toastIcon.className = 'fas fa-check-circle toast-icon';
+    }
+
+    toast.classList.add('show');
+
+    // Clear any previous auto-dismiss timer
+    if (toastTimeout) {
+        clearTimeout(toastTimeout);
+    }
+
+    // Auto hide after 5 seconds
+    toastTimeout = setTimeout(function() {
+        closeToast();
+    }, 5000);
+}
+
+/**
+ * Dismiss Toast Notification
+ */
+function closeToast() {
+    const toast = document.getElementById('toast');
+    if (toast) {
+        toast.classList.remove('show');
+    }
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+
+    // 1. Navbar Scroll Elevation Effect
+    const navbar = document.querySelector('.navbar');
+    if (navbar) {
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 40) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+    }
+
+    // 2. Dark Mode Toggle with Persistent State
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const savedTheme = localStorage.getItem('theme') || localStorage.getItem('darkMode');
+
+    if (savedTheme === 'dark' || savedTheme === 'enabled') {
+        document.body.classList.add('dark-mode');
+        if (darkModeToggle) {
+            darkModeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+            darkModeToggle.setAttribute('aria-label', 'Switch to Light Mode');
+        }
+    }
+
     if (darkModeToggle) {
         darkModeToggle.addEventListener('click', function() {
             document.body.classList.toggle('dark-mode');
-            
-            // Toggle between moon and sun icons
-            const icon = this.querySelector('i');
-            if (document.body.classList.contains('dark-mode')) {
+            const isDark = document.body.classList.contains('dark-mode');
+
+            if (isDark) {
                 this.innerHTML = '<i class="fas fa-sun"></i>';
+                this.setAttribute('aria-label', 'Switch to Light Mode');
+                localStorage.setItem('theme', 'dark');
                 localStorage.setItem('darkMode', 'enabled');
             } else {
                 this.innerHTML = '<i class="fas fa-moon"></i>';
+                this.setAttribute('aria-label', 'Switch to Dark Mode');
+                localStorage.setItem('theme', 'light');
                 localStorage.setItem('darkMode', 'disabled');
             }
         });
     }
 
-    // Mobile Navigation Toggle
+    // 3. Mobile Navigation Hamburger Menu
     const hamburger = document.querySelector('.hamburger');
     const navLinks = document.querySelector('.nav-links');
 
-    if (hamburger) {
+    if (hamburger && navLinks) {
         hamburger.addEventListener('click', function() {
             navLinks.classList.toggle('active');
             const spans = hamburger.querySelectorAll('span');
             if (navLinks.classList.contains('active')) {
-                spans[0].style.transform = 'rotate(45deg) translate(5px, 5px)';
-                spans[1].style.opacity = '0';
-                spans[2].style.transform = 'rotate(-45deg) translate(5px, -5px)';
+                if (spans.length >= 3) {
+                    spans[0].style.transform = 'rotate(45deg) translate(5px, 5px)';
+                    spans[1].style.opacity = '0';
+                    spans[2].style.transform = 'rotate(-45deg) translate(5px, -5px)';
+                }
             } else {
-                spans[0].style.transform = 'none';
-                spans[1].style.opacity = '1';
-                spans[2].style.transform = 'none';
+                if (spans.length >= 3) {
+                    spans[0].style.transform = 'none';
+                    spans[1].style.opacity = '1';
+                    spans[2].style.transform = 'none';
+                }
             }
+        });
+
+        // Close mobile menu when clicking any nav link
+        navLinks.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', function() {
+                navLinks.classList.remove('active');
+                const spans = hamburger.querySelectorAll('span');
+                if (spans.length >= 3) {
+                    spans[0].style.transform = 'none';
+                    spans[1].style.opacity = '1';
+                    spans[2].style.transform = 'none';
+                }
+            });
         });
     }
 
-    // Close mobile menu when clicking on a link
-    document.querySelectorAll('.nav-links a').forEach(link => {
-        link.addEventListener('click', function() {
-            if (navLinks) navLinks.classList.remove('active');
-        });
-    });
-
-    // Smooth Scroll Navigation
+    // 4. Safe Smooth Scroll Navigation
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function(e) {
-            e.preventDefault();
             const targetId = this.getAttribute('href');
-            const targetSection = document.querySelector(targetId);
-            if (targetSection && navbar) {
-                const navbarHeight = navbar.offsetHeight;
-                const targetPosition = targetSection.offsetTop - navbarHeight;
-                window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+            if (targetId && targetId !== '#' && targetId.startsWith('#')) {
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    e.preventDefault();
+                    const navOffset = navbar ? navbar.offsetHeight : 70;
+                    const targetPosition = targetElement.offsetTop - navOffset;
+                    window.scrollTo({
+                        top: targetPosition,
+                        behavior: 'smooth'
+                    });
+                }
             }
         });
     });
 
-    // Resume Download Form Validation
-    const resumeForm = document.getElementById('resumeForm');
-    const resumeName = document.getElementById('resumeName');
-    const resumeEmail = document.getElementById('resumeEmail');
-    const nameError = document.getElementById('nameError');
-    const emailError = document.getElementById('emailError');
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (resumeForm) {
-        resumeForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            let isValid = true;
-            
-            if (nameError) nameError.textContent = '';
-            if (emailError) emailError.textContent = '';
-            if (resumeName) resumeName.style.borderColor = '#e5e7eb';
-            if (resumeEmail) resumeEmail.style.borderColor = '#e5e7eb';
-
-            const nameValue = resumeName ? resumeName.value.trim() : '';
-            if (nameValue === '') {
-                if (nameError) nameError.textContent = 'Please enter your full name';
-                if (resumeName) resumeName.style.borderColor = '#ef4444';
-                isValid = false;
-            }
-
-            const emailValue = resumeEmail ? resumeEmail.value.trim() : '';
-            if (emailValue === '') {
-                if (emailError) emailError.textContent = 'Please enter your email address';
-                if (resumeEmail) resumeEmail.style.borderColor = '#ef4444';
-                isValid = false;
-            } else if (!emailRegex.test(emailValue)) {
-                if (emailError) emailError.textContent = 'Please enter a valid email address';
-                if (resumeEmail) resumeEmail.style.borderColor = '#ef4444';
-                isValid = false;
-            }
-
-            if (isValid) {
-                downloadResume();
-            }
-        });
-    }
-
-    // Real-time validation feedback
-    if (resumeName) {
-        resumeName.addEventListener('input', function() {
-            if (this.value.trim().length >= 2) {
-                if (nameError) nameError.textContent = '';
-                this.style.borderColor = '#10b981';
-            }
-        });
-    }
-
-    if (resumeEmail) {
-        resumeEmail.addEventListener('input', function() {
-            if (emailRegex.test(this.value.trim())) {
-                if (emailError) emailError.textContent = '';
-                this.style.borderColor = '#10b981';
-            }
-        });
-    }
-
-    // Contact Form - Formspree Submission
+    // 5. Contact Form Validation & Asynchronous Submission
     const contactForm = document.getElementById('contactForm');
     const contactName = document.getElementById('contactName');
     const contactEmail = document.getElementById('contactEmail');
@@ -153,187 +219,113 @@ document.addEventListener('DOMContentLoaded', function() {
     const contactNameError = document.getElementById('contactNameError');
     const contactEmailError = document.getElementById('contactEmailError');
     const contactMessageError = document.getElementById('contactMessageError');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    // Real-time input clearing
+    [contactName, contactEmail, contactMessage].forEach(input => {
+        if (input) {
+            input.addEventListener('input', function() {
+                const errorSpan = document.getElementById(this.id + 'Error');
+                if (errorSpan) errorSpan.textContent = '';
+                this.style.borderColor = '';
+            });
+        }
+    });
 
     if (contactForm) {
         contactForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-            
             let isValid = true;
-            
+
+            // Reset errors
             if (contactNameError) contactNameError.textContent = '';
             if (contactEmailError) contactEmailError.textContent = '';
             if (contactMessageError) contactMessageError.textContent = '';
-            if (contactName) contactName.style.borderColor = '#e5e7eb';
-            if (contactEmail) contactEmail.style.borderColor = '#e5e7eb';
-            if (contactMessage) contactMessage.style.borderColor = '#e5e7eb';
 
-            const nameValue = contactName ? contactName.value.trim() : '';
-            if (nameValue === '') {
-                if (contactNameError) contactNameError.textContent = 'Please enter your name';
+            const nameVal = contactName ? contactName.value.trim() : '';
+            const emailVal = contactEmail ? contactEmail.value.trim() : '';
+            const messageVal = contactMessage ? contactMessage.value.trim() : '';
+
+            if (!nameVal) {
+                if (contactNameError) contactNameError.textContent = 'Please enter your name.';
                 if (contactName) contactName.style.borderColor = '#ef4444';
                 isValid = false;
             }
 
-            const emailValue = contactEmail ? contactEmail.value.trim() : '';
-            if (emailValue === '') {
-                if (contactEmailError) contactEmailError.textContent = 'Please enter your email';
+            if (!emailVal) {
+                if (contactEmailError) contactEmailError.textContent = 'Please enter your email address.';
                 if (contactEmail) contactEmail.style.borderColor = '#ef4444';
                 isValid = false;
-            } else if (!emailRegex.test(emailValue)) {
-                if (contactEmailError) contactEmailError.textContent = 'Please enter a valid email';
+            } else if (!emailRegex.test(emailVal)) {
+                if (contactEmailError) contactEmailError.textContent = 'Please enter a valid email address.';
                 if (contactEmail) contactEmail.style.borderColor = '#ef4444';
                 isValid = false;
             }
 
-            const messageValue = contactMessage ? contactMessage.value.trim() : '';
-            if (messageValue === '') {
-                if (contactMessageError) contactMessageError.textContent = 'Please enter your message';
+            if (!messageVal) {
+                if (contactMessageError) contactMessageError.textContent = 'Please write a message.';
                 if (contactMessage) contactMessage.style.borderColor = '#ef4444';
                 isValid = false;
             }
 
-            if (isValid) {
+            if (!isValid) return;
+
+            const submitBtn = contactForm.querySelector('button[type="submit"]');
+            const originalBtnContent = submitBtn ? submitBtn.innerHTML : 'Send Message';
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+            }
+
+            try {
                 const formData = new FormData(contactForm);
-                const submitBtn = contactForm.querySelector('button[type="submit"]');
-                
+                const response = await fetch(contactForm.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                if (response.ok) {
+                    showToast('Message Sent!', 'Thank you! Your message has been received. I will get back to you soon.', false);
+                    contactForm.reset();
+                } else {
+                    const data = await response.json();
+                    const msg = (data && data.errors && data.errors.map(err => err.message).join(', ')) || 'Failed to send message. Please try again.';
+                    showToast('Error', msg, true);
+                }
+            } catch (err) {
+                console.error('Contact Form Submission Error:', err);
+                showToast('Network Error', 'Could not reach the server. Please check your internet connection or email directly.', true);
+            } finally {
                 if (submitBtn) {
-                    submitBtn.disabled = true;
-                    submitBtn.textContent = 'Sending...';
-                }
-
-                try {
-                    const response = await fetch(contactForm.action, {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'Accept': 'application/json'
-                        }
-                    });
-
-                    if (response.ok) {
-                        showToast('Success!', 'Thank you! Your message has been sent successfully.');
-                        contactForm.reset();
-                    } else {
-                        const errorData = await response.json();
-                        if (errorData.error) {
-                            showToast('Error', errorData.error, true);
-                        } else {
-                            showToast('Error', 'Something went wrong. Please try again.', true);
-                        }
-                    }
-                } catch (error) {
-                    console.error('Form submission error:', error);
-                    showToast('Error', 'Network error. Please check your connection and try again.', true);
-                } finally {
-                    if (submitBtn) {
-                        submitBtn.disabled = false;
-                        submitBtn.textContent = 'Send Message';
-                    }
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnContent;
                 }
             }
         });
     }
 
-    // Skill Bar Animation on Scroll
-    const skillCards = document.querySelectorAll('.skill-card');
-    const observerOptions = { threshold: 0.3 };
-    const skillObserver = new IntersectionObserver(function(entries) {
-        entries.forEach(function(entry) {
-            if (entry.isIntersecting) {
-                const skillBar = entry.target.querySelector('.skill-progress');
-                if (skillBar) {
-                    const width = skillBar.style.width;
-                    skillBar.style.width = '0';
-                    setTimeout(function() { skillBar.style.width = width; }, 100);
-                }
-            }
-        });
-    }, observerOptions);
-    skillCards.forEach(function(card) { skillObserver.observe(card); });
+    // 6. Global Backdrop & Escape Key Handlers for Modals
+    window.addEventListener('click', function(event) {
+        const resumeModal = document.getElementById('resumeModal');
+        const certificateModal = document.getElementById('certificateModal');
 
-    console.log('Portfolio website initialized successfully!');
-});
-
-// Resume Download Function - Opens resume in new tab
-function downloadResume() {
-    var resumePath = 'assets/resume.pdf?v=2';
-    window.open(resumePath, '_blank');
-    
-    var resumeName = document.getElementById('resumeName');
-    var nameValue = resumeName ? resumeName.value.trim() : 'User';
-    
-    setTimeout(function() {
-        alert('Resume opened! Thank you, ' + nameValue);
-    }, 500);
-}
-
-// Show Resume Modal Function
-function showResume() {
-    var modal = document.getElementById('resumeModal');
-    if (modal) modal.style.display = 'flex';
-}
-
-// Close Resume Modal Function
-function closeResume() {
-    var modal = document.getElementById('resumeModal');
-    if (modal) modal.style.display = 'none';
-}
-
-// Close modal when clicking outside
-window.onclick = function(event) {
-    var resumeModal = document.getElementById('resumeModal');
-    var certificateModal = document.getElementById('certificateModal');
-    if (event.target === resumeModal) resumeModal.style.display = 'none';
-    if (event.target === certificateModal) certificateModal.style.display = 'none';
-};
-
-// Show Certificate Modal Function
-function showCertificate(imageSrc) {
-    var modal = document.getElementById('certificateModal');
-    var img = document.getElementById('certificateImage');
-    if (modal && img) {
-        img.src = imageSrc;
-        modal.style.display = 'flex';
-    }
-}
-
-// Close Certificate Modal Function
-function closeCertificate() {
-    var modal = document.getElementById('certificateModal');
-    if (modal) modal.style.display = 'none';
-}
-
-// Toast Notification Functions
-function showToast(title, message, isError = false) {
-    var toast = document.getElementById('toast');
-    var toastTitle = document.getElementById('toastTitle');
-    var toastMessage = document.getElementById('toastMessage');
-    var toastIcon = document.getElementById('toastIcon');
-    
-    if (toast && toastTitle && toastMessage && toastIcon) {
-        toastTitle.textContent = title;
-        toastMessage.textContent = message;
-        
-        if (isError) {
-            toast.classList.add('error');
-            toastIcon.className = 'fas fa-exclamation-circle';
-        } else {
-            toast.classList.remove('error');
-            toastIcon.className = 'fas fa-check-circle';
+        if (event.target === resumeModal) {
+            closeResume();
         }
-        
-        toast.classList.add('show');
-        
-        // Auto hide after 5 seconds
-        setTimeout(function() {
-            closeToast();
-        }, 5000);
-    }
-}
+        if (event.target === certificateModal) {
+            closeCertificate();
+        }
+    });
 
-function closeToast() {
-    var toast = document.getElementById('toast');
-    if (toast) {
-        toast.classList.remove('show');
-    }
-}
+    window.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeResume();
+            closeCertificate();
+            closeToast();
+        }
+    });
+
+    console.log('Portfolio initialized successfully with responsive features!');
+});
